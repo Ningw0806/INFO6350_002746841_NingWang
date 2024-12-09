@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.final_project"
-    compileSdk = 33
+    compileSdk = 34
     ndkVersion = "23.1.7779620"
 
     compileOptions {
@@ -23,7 +23,7 @@ android {
         applicationId = "com.example.final_project"
         // You can update the following values to match your application needs.
         minSdk = 23
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
     }

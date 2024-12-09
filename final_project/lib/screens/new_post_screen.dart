@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NewPostScreen extends StatefulWidget {
   @override
@@ -13,14 +13,14 @@ class _NewPostScreenState extends State<NewPostScreen> {
   final TextEditingController titleController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  File? selectedImage;
+  List<File> selectedImages = [];
 
-  Future<void> _pickImage() async {
+  Future<void> _pickImages() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    if (pickedFile != null) {
+    final pickedFiles = await picker.pickMultiImage();
+    if (pickedFiles != null) {
       setState(() {
-        selectedImage = File(pickedFile.path);
+        selectedImages = pickedFiles.map((file) => File(file.path)).toList();
       });
     }
   }
@@ -36,12 +36,17 @@ class _NewPostScreenState extends State<NewPostScreen> {
     final postsCollection = FirebaseFirestore.instance.collection('posts');
     final docRef = await postsCollection.add(post);
 
-    if (selectedImage != null) {
+    final imageUrls = <String>[];
+    for (var image in selectedImages) {
       final storageRef = FirebaseStorage.instance
           .ref()
-          .child('post_images/${docRef.id}.jpg');
-      await storageRef.putFile(selectedImage!);
+          .child('post_images/${docRef.id}_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await storageRef.putFile(image);
+      final imageUrl = await storageRef.getDownloadURL();
+      imageUrls.add(imageUrl);
     }
+
+    await docRef.update({'images': imageUrls});
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Post added successfully!')),
@@ -53,9 +58,7 @@ class _NewPostScreenState extends State<NewPostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('New Post'),
-      ),
+      appBar: AppBar(title: Text('New Post')),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -74,14 +77,21 @@ class _NewPostScreenState extends State<NewPostScreen> {
               decoration: InputDecoration(labelText: 'Description'),
               maxLines: 3,
             ),
-            SizedBox(height: 10),
-            selectedImage != null
-                ? Image.file(selectedImage!, height: 150)
-                : Text('No image selected'),
             ElevatedButton(
-              onPressed: _pickImage,
-              child: Text('Pick Image'),
+              onPressed: _pickImages,
+              child: Text('Pick Images'),
             ),
+            selectedImages.isNotEmpty
+                ? SizedBox(
+              height: 150,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: selectedImages
+                    .map((image) => Image.file(image, height: 150))
+                    .toList(),
+              ),
+            )
+                : Text('No images selected'),
             Spacer(),
             ElevatedButton(
               onPressed: _savePost,

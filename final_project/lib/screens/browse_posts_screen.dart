@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'new_post_screen.dart';
 import '../widgets/post_list_item.dart';
+import '../models/post_model.dart';
 
 class BrowsePostsScreen extends StatelessWidget {
   final CollectionReference postsCollection =
@@ -23,13 +23,14 @@ class BrowsePostsScreen extends StatelessWidget {
             return Center(child: Text('No posts yet!'));
           }
 
-          final posts = snapshot.data!.docs;
+          final posts = snapshot.data!.docs
+              .map((doc) => Post.fromFirestore(doc.data() as Map<String, dynamic>, doc.id))
+              .toList();
 
           return ListView.builder(
             itemCount: posts.length,
             itemBuilder: (context, index) {
-              final post = posts[index].data() as Map<String, dynamic>;
-              return PostListItem(post: post, postId: posts[index].id);
+              return PostListItem(post: posts[index]);
             },
           );
         },
