@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:camera/camera.dart';
+import 'take_picture_screen.dart';
 
 class NewPostScreen extends StatefulWidget {
   @override
@@ -21,6 +23,21 @@ class _NewPostScreenState extends State<NewPostScreen> {
     if (pickedFiles != null) {
       setState(() {
         selectedImages = pickedFiles.map((file) => File(file.path)).toList();
+      });
+    }
+  }
+
+  Future<void> _takePicture() async {
+    final File? capturedImage = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TakePictureScreen(camera: cameras.first),
+      ),
+    );
+
+    if (capturedImage != null) {
+      setState(() {
+        selectedImages.add(capturedImage);
       });
     }
   }
@@ -77,9 +94,18 @@ class _NewPostScreenState extends State<NewPostScreen> {
               decoration: InputDecoration(labelText: 'Description'),
               maxLines: 3,
             ),
-            ElevatedButton(
-              onPressed: _pickImages,
-              child: Text('Pick Images'),
+            Row(
+              children: [
+                ElevatedButton(
+                  onPressed: _pickImages,
+                  child: Text('Pick Images'),
+                ),
+                SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _takePicture,
+                  child: Text('Take Picture'),
+                ),
+              ],
             ),
             selectedImages.isNotEmpty
                 ? SizedBox(
